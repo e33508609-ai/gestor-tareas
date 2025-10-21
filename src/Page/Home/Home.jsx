@@ -29,6 +29,12 @@ const Home = () => {
   const [Editar, setEditar] = useState(false);
   const [tareaEditar, setTareaEditar] = useState(null);
 
+  const [mostrarFiltro, setMostrarFiltro] = useState(false);
+  const [mostrarOrden, setMostrarOrden] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [orden, setOrden] = useState("");
+  const [tareasFiltradas, setTareasFiltradas] = useState([]);
+
   const totalTareas = tareas.length;
   const completadas = tareas.filter(t => t.estado === "completada").length;
   const enProgreso = tareas.filter(t => t.estado === "en progreso").length;
@@ -51,7 +57,7 @@ const Home = () => {
         const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
         if (usuario) {
           const data = await obtenerTareas(usuario.id);
-         
+
           const tareasFormateadas = data.map(t => ({
             ...t,
             fecha_vencimiento: t.fecha_vencimiento
@@ -72,9 +78,36 @@ const Home = () => {
     fetchTareas();
   }, []);
 
+
+  useEffect(() => {
+    let filtradas = [...tareas];
+
+
+    if (filtroEstado) {
+      filtradas = filtradas.filter(
+        (t) => t.estado.toLowerCase() === filtroEstado.toLowerCase()
+      );
+    }
+
+
+    if (orden === "fecha") {
+      filtradas.sort(
+        (a, b) => new Date(a.fecha_creacion) - new Date(b.fecha_creacion)
+      );
+    } else if (orden === "prioridad") {
+      const prioridadOrden = { alta: 1, media: 2, baja: 3 };
+      filtradas.sort(
+        (a, b) => prioridadOrden[a.prioridad] - prioridadOrden[b.prioridad]
+      );
+    }
+
+    setTareasFiltradas(filtradas);
+  }, [filtroEstado, orden, tareas]);
+
   const handleChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -215,12 +248,12 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
-     
+
       <Nav />
 
-   
+
       <main className="flex-1 p-6 space-y-8 max-w-7xl mx-auto w-full">
-      
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
@@ -231,7 +264,7 @@ const Home = () => {
             </p>
           </div>
 
-        
+
           <button
             onClick={togglePanel}
             className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 group"
@@ -253,7 +286,7 @@ const Home = () => {
           </button>
         </div>
 
- 
+
         <section className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -310,11 +343,11 @@ const Home = () => {
           </div>
         </section>
 
-     
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-    
+
           <div className="xl:col-span-2 space-y-8">
-           
+
             <section className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -325,21 +358,85 @@ const Home = () => {
                     Lista completa de todas tus tareas
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-                    Filtrar
-                  </button>
-                  <button className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-                    Ordenar
-                  </button>
+                <div className="relative flex gap-2">
+                  {/* FILTRAR */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setMostrarFiltro(!mostrarFiltro);
+                        setMostrarOrden(false);
+                      }}
+                      className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+                    >
+                      Filtrar
+                    </button>
+
+                    {mostrarFiltro && (
+                      <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-lg border border-gray-200 z-10">
+                        {["todos", "pendiente", "en progreso", "completada"].map((estado) => (
+                          <button
+                            key={estado}
+                            onClick={() => {
+                              setFiltroEstado(estado === "todos" ? "" : estado);
+                              setMostrarFiltro(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 ${filtroEstado === estado ? "bg-slate-200 font-medium" : ""
+                              }`}
+                          >
+                            {estado === "todos"
+                              ? "Todos"
+                              : estado.charAt(0).toUpperCase() + estado.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ORDENAR */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setMostrarOrden(!mostrarOrden);
+                        setMostrarFiltro(false);
+                      }}
+                      className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+                    >
+                      Ordenar
+                    </button>
+
+                    {mostrarOrden && (
+                      <div className="absolute mt-2 w-44 bg-white shadow-lg rounded-lg border border-gray-200 z-10">
+                        <button
+                          onClick={() => {
+                            setOrden("fecha");
+                            setMostrarOrden(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 ${orden === "fecha" ? "bg-slate-200 font-medium" : ""
+                            }`}
+                        >
+                          Fecha de creación
+                        </button>
+                        <button
+                          onClick={() => {
+                            setOrden("prioridad");
+                            setMostrarOrden(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-100 ${orden === "prioridad" ? "bg-slate-200 font-medium" : ""
+                            }`}
+                        >
+                          Prioridad
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <Tbl
                 columns={[
                   { header: "Título", accessor: "titulo" },
                   { header: "Descripción", accessor: "descripcion" },
-                  { 
-                    header: "Estado", 
+                  {
+                    header: "Estado",
                     accessor: "estado",
                     render: (tarea) => {
                       const estadoConfig = {
@@ -355,8 +452,8 @@ const Home = () => {
                       );
                     }
                   },
-                  { 
-                    header: "Prioridad", 
+                  {
+                    header: "Prioridad",
                     accessor: "prioridad",
                     render: (tarea) => {
                       const prioridadConfig = {
@@ -372,6 +469,28 @@ const Home = () => {
                       );
                     }
                   },
+                   {
+      header: "Creación",
+      accessor: "fecha_creacion",
+      render: (tarea) => (
+        <span className="text-sm text-slate-700">{tarea.fecha_creacion}</span>
+      ),
+    },
+    {
+      header: "Vencimiento",
+      accessor: "fecha_vencimiento",
+      render: (tarea) => (
+        <span
+          className={`text-sm ${
+            tarea.fecha_vencimiento === "Sin fecha"
+              ? "text-slate-400 italic"
+              : "text-slate-700"
+          }`}
+        >
+          {tarea.fecha_vencimiento}
+        </span>
+      ),
+    },
                   {
                     header: "Acciones",
                     render: (tarea) => (
@@ -411,14 +530,14 @@ const Home = () => {
                     ),
                   },
                 ]}
-                data={tareas}
+                data={tareasFiltradas}
               />
             </section>
           </div>
 
-        
+
           <div className="space-y-8">
-      
+
             <section className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
               <h3 className="text-xl font-semibold text-slate-800 mb-6">
                 Progreso General
@@ -453,7 +572,7 @@ const Home = () => {
                   </div>
                   <p className="text-slate-600 mt-4 font-medium">Tareas Completadas</p>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-700">Completadas</span>
@@ -471,7 +590,7 @@ const Home = () => {
               </div>
             </section>
 
-            
+
             <section className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
               <h3 className="text-xl font-semibold text-slate-800 mb-6">
                 Distribución por Prioridad
@@ -483,34 +602,34 @@ const Home = () => {
                     <span className="text-slate-600 text-sm">{pctAlta}% ({alta})</span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div 
-                      className="bg-red-500 h-2 rounded-full transition-all duration-500" 
+                    <div
+                      className="bg-red-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${pctAlta}%` }}
                     ></div>
                   </div>
                 </div>
-                
+
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-slate-700 font-medium">Media</span>
                     <span className="text-slate-600 text-sm">{pctMedia}% ({media})</span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div 
-                      className="bg-yellow-500 h-2 rounded-full transition-all duration-500" 
+                    <div
+                      className="bg-yellow-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${pctMedia}%` }}
                     ></div>
                   </div>
                 </div>
-                
+
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-slate-700 font-medium">Baja</span>
                     <span className="text-slate-600 text-sm">{pctBaja}% ({baja})</span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${pctBaja}%` }}
                     ></div>
                   </div>
@@ -529,8 +648,8 @@ const Home = () => {
               {Editar ? "Editar Tarea" : "Crear Nueva Tarea"}
             </h3>
             <p className="text-slate-600 text-sm">
-              {Editar 
-                ? "Modifica la información de la tarea seleccionada" 
+              {Editar
+                ? "Modifica la información de la tarea seleccionada"
                 : "Completa los detalles para registrar una nueva tarea en el sistema"
               }
             </p>

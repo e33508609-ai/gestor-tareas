@@ -96,7 +96,7 @@ const handleSubmit = async (e) => {
               <p className="text-gray-700">
                 ¿No tienes una cuenta?{' '}
                 <Link to={'/registro'} 
-                  href="/registro" 
+                 
                   className="text-blue-600 hover:text-blue-500 font-semibold transition-colors duration-200 underline underline-offset-2"
                 >
                   Regístrate aquí
